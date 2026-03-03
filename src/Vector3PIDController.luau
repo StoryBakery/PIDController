@@ -3,15 +3,15 @@
 local PIDController = require("./PIDController")
 
 export type Vector3PIDControllerParams = {
-	Kp: number | Vector3?,
-	Ki: number | Vector3?,
-	Kd: number | Vector3?,
-	Setpoint: Vector3?,
-	InitialMeasurement: Vector3?,
-	OutputMin: number | Vector3?,
-	OutputMax: number | Vector3?,
-	IntegralMin: number | Vector3?,
-	IntegralMax: number | Vector3?,
+	Kp: vector?,
+	Ki: vector?,
+	Kd: vector?,
+	Setpoint: vector?,
+	InitialMeasurement: vector?,
+	OutputMin: vector?,
+	OutputMax: vector?,
+	IntegralMin: vector?,
+	IntegralMax: vector?,
 	DerivativeMode: PIDController.DerivativeMode?,
 }
 
@@ -19,47 +19,35 @@ local Vector3PIDController = {}
 Vector3PIDController.__index = Vector3PIDController
 
 export type Vector3PIDController = setmetatable<{
-	Setpoint: Vector3,
-	_x: any,
-	_y: any,
-	_z: any,
+	Setpoint: vector,
+	_x: PIDController.PIDController,
+	_y: PIDController.PIDController,
+	_z: PIDController.PIDController,
 }, typeof(Vector3PIDController)>
 
-local function axisFromVector(value: Vector3?, axis: "X" | "Y" | "Z"): number?
+local function axisFromVector(value: vector?, axis: "X" | "Y" | "Z"): number?
 	if value == nil then
 		return nil
 	end
 	if axis == "X" then
-		return value.X
+		return value.x
 	elseif axis == "Y" then
-		return value.Y
+		return value.y
 	end
-	return value.Z
-end
-
-local function numberOrAxisValue(value: number | Vector3, axis: "X" | "Y" | "Z"): number
-	local valueType = typeof(value)
-	if valueType == "number" then
-		return value :: number
-	elseif axis == "X" then
-		return (value :: Vector3).X
-	elseif axis == "Y" then
-		return (value :: Vector3).Y
-	end
-	return (value :: Vector3).Z
+	return value.z
 end
 
 local function makeAxisParams(params: Vector3PIDControllerParams, axis: "X" | "Y" | "Z")
 	return {
-		Kp = params.Kp and numberOrAxisValue(params.Kp, axis) or nil,
-		Ki = params.Ki and numberOrAxisValue(params.Ki, axis) or nil,
-		Kd = params.Kd and numberOrAxisValue(params.Kd, axis) or nil,
+		Kp = axisFromVector(params.Kp, axis),
+		Ki = axisFromVector(params.Ki, axis),
+		Kd = axisFromVector(params.Kd, axis),
 		Setpoint = axisFromVector(params.Setpoint, axis),
 		InitialMeasurement = axisFromVector(params.InitialMeasurement, axis),
-		OutputMin = params.OutputMin and numberOrAxisValue(params.OutputMin, axis) or nil,
-		OutputMax = params.OutputMax and numberOrAxisValue(params.OutputMax, axis) or nil,
-		IntegralMin = params.IntegralMin and numberOrAxisValue(params.IntegralMin, axis) or nil,
-		IntegralMax = params.IntegralMax and numberOrAxisValue(params.IntegralMax, axis) or nil,
+		OutputMin = axisFromVector(params.OutputMin, axis),
+		OutputMax = axisFromVector(params.OutputMax, axis),
+		IntegralMin = axisFromVector(params.IntegralMin, axis),
+		IntegralMax = axisFromVector(params.IntegralMax, axis),
 		DerivativeMode = params.DerivativeMode,
 	}
 end
@@ -72,7 +60,7 @@ function Vector3PIDController.new(params: Vector3PIDControllerParams?): Vector3P
 	local zController = PIDController.new(makeAxisParams(params, "Z"))
 
 	local self = setmetatable({
-		Setpoint = Vector3.new(xController.Setpoint, yController.Setpoint, zController.Setpoint),
+		Setpoint = vector.create(xController.Setpoint, yController.Setpoint, zController.Setpoint),
 		_x = xController,
 		_y = yController,
 		_z = zController,
@@ -81,44 +69,28 @@ function Vector3PIDController.new(params: Vector3PIDControllerParams?): Vector3P
 	return self
 end
 
-function Vector3PIDController:SetTunings(
-	kp: number | Vector3,
-	ki: number | Vector3,
-	kd: number | Vector3
-)
-	self._x:SetTunings(
-		numberOrAxisValue(kp, "X"),
-		numberOrAxisValue(ki, "X"),
-		numberOrAxisValue(kd, "X")
-	)
-	self._y:SetTunings(
-		numberOrAxisValue(kp, "Y"),
-		numberOrAxisValue(ki, "Y"),
-		numberOrAxisValue(kd, "Y")
-	)
-	self._z:SetTunings(
-		numberOrAxisValue(kp, "Z"),
-		numberOrAxisValue(ki, "Z"),
-		numberOrAxisValue(kd, "Z")
-	)
+function Vector3PIDController:SetTunings(kp: vector, ki: vector, kd: vector)
+	self._x:SetTunings(kp.x, ki.x, kd.x)
+	self._y:SetTunings(kp.y, ki.y, kd.y)
+	self._z:SetTunings(kp.z, ki.z, kd.z)
 end
 
-function Vector3PIDController:SetKp(kp: number | Vector3)
-	self._x:SetKp(numberOrAxisValue(kp, "X"))
-	self._y:SetKp(numberOrAxisValue(kp, "Y"))
-	self._z:SetKp(numberOrAxisValue(kp, "Z"))
+function Vector3PIDController:SetKp(kp: vector)
+	self._x:SetKp(kp.x)
+	self._y:SetKp(kp.y)
+	self._z:SetKp(kp.z)
 end
 
-function Vector3PIDController:SetKi(ki: number | Vector3)
-	self._x:SetKi(numberOrAxisValue(ki, "X"))
-	self._y:SetKi(numberOrAxisValue(ki, "Y"))
-	self._z:SetKi(numberOrAxisValue(ki, "Z"))
+function Vector3PIDController:SetKi(ki: vector)
+	self._x:SetKi(ki.x)
+	self._y:SetKi(ki.y)
+	self._z:SetKi(ki.z)
 end
 
-function Vector3PIDController:SetKd(kd: number | Vector3)
-	self._x:SetKd(numberOrAxisValue(kd, "X"))
-	self._y:SetKd(numberOrAxisValue(kd, "Y"))
-	self._z:SetKd(numberOrAxisValue(kd, "Z"))
+function Vector3PIDController:SetKd(kd: vector)
+	self._x:SetKd(kd.x)
+	self._y:SetKd(kd.y)
+	self._z:SetKd(kd.z)
 end
 
 function Vector3PIDController:SetDerivativeMode(mode: PIDController.DerivativeMode)
@@ -127,29 +99,23 @@ function Vector3PIDController:SetDerivativeMode(mode: PIDController.DerivativeMo
 	self._z:SetDerivativeMode(mode)
 end
 
-function Vector3PIDController:SetSetpoint(setpoint: Vector3)
+function Vector3PIDController:SetSetpoint(setpoint: vector)
 	self.Setpoint = setpoint
-	self._x:SetSetpoint(setpoint.X)
-	self._y:SetSetpoint(setpoint.Y)
-	self._z:SetSetpoint(setpoint.Z)
+	self._x:SetSetpoint(setpoint.x)
+	self._y:SetSetpoint(setpoint.y)
+	self._z:SetSetpoint(setpoint.z)
 end
 
-function Vector3PIDController:SetOutputLimits(
-	minValue: number | Vector3,
-	maxValue: number | Vector3
-)
-	self._x:SetOutputLimits(numberOrAxisValue(minValue, "X"), numberOrAxisValue(maxValue, "X"))
-	self._y:SetOutputLimits(numberOrAxisValue(minValue, "Y"), numberOrAxisValue(maxValue, "Y"))
-	self._z:SetOutputLimits(numberOrAxisValue(minValue, "Z"), numberOrAxisValue(maxValue, "Z"))
+function Vector3PIDController:SetOutputLimits(minValue: vector, maxValue: vector)
+	self._x:SetOutputLimits(minValue.x, maxValue.x)
+	self._y:SetOutputLimits(minValue.y, maxValue.y)
+	self._z:SetOutputLimits(minValue.z, maxValue.z)
 end
 
-function Vector3PIDController:SetIntegralLimits(
-	minValue: number | Vector3,
-	maxValue: number | Vector3
-)
-	self._x:SetIntegralLimits(numberOrAxisValue(minValue, "X"), numberOrAxisValue(maxValue, "X"))
-	self._y:SetIntegralLimits(numberOrAxisValue(minValue, "Y"), numberOrAxisValue(maxValue, "Y"))
-	self._z:SetIntegralLimits(numberOrAxisValue(minValue, "Z"), numberOrAxisValue(maxValue, "Z"))
+function Vector3PIDController:SetIntegralLimits(minValue: vector, maxValue: vector)
+	self._x:SetIntegralLimits(minValue.x, maxValue.x)
+	self._y:SetIntegralLimits(minValue.y, maxValue.y)
+	self._z:SetIntegralLimits(minValue.z, maxValue.z)
 end
 
 function Vector3PIDController:ClearOutputLimits()
@@ -164,11 +130,11 @@ function Vector3PIDController:ClearIntegralLimits()
 	self._z:ClearIntegralLimits()
 end
 
-function Vector3PIDController:Reset(measurement: Vector3?)
+function Vector3PIDController:Reset(measurement: vector?)
 	if measurement then
-		self._x:Reset(measurement.X)
-		self._y:Reset(measurement.Y)
-		self._z:Reset(measurement.Z)
+		self._x:Reset(measurement.x)
+		self._y:Reset(measurement.y)
+		self._z:Reset(measurement.z)
 	else
 		self._x:Reset(nil)
 		self._y:Reset(nil)
@@ -176,7 +142,7 @@ function Vector3PIDController:Reset(measurement: Vector3?)
 	end
 end
 
-function Vector3PIDController:GetMeasurement(): Vector3?
+function Vector3PIDController:GetMeasurement(): vector?
 	local xMeasurement = self._x:GetMeasurement()
 	local yMeasurement = self._y:GetMeasurement()
 	local zMeasurement = self._z:GetMeasurement()
@@ -184,14 +150,14 @@ function Vector3PIDController:GetMeasurement(): Vector3?
 		return nil
 	end
 
-	return Vector3.new(xMeasurement, yMeasurement, zMeasurement)
+	return vector.create(xMeasurement, yMeasurement, zMeasurement)
 end
 
-function Vector3PIDController:Update(dt: number, measurement: Vector3): Vector3
-	return Vector3.new(
-		self._x:Update(dt, measurement.X),
-		self._y:Update(dt, measurement.Y),
-		self._z:Update(dt, measurement.Z)
+function Vector3PIDController:Update(dt: number, measurement: vector): vector
+	return vector.create(
+		self._x:Update(dt, measurement.x),
+		self._y:Update(dt, measurement.y),
+		self._z:Update(dt, measurement.z)
 	)
 end
 
